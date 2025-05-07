@@ -1,0 +1,177 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cleanup
+spec:
+  description: "This task will cleanup the workspace by deleting all files."
+  workspaces:
+    - name: source
+      description: The workspace where the source code is stored.
+  steps:
+    - name: cleanup-workspace
+      image: alpine:latest
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env sh
+        echo "Cleaning up workspace $(workspaces.source.path)"
+        rm -rf $(workspaces.source.path)/*
+        echo "Workspace cleaned."
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: lint-code
+spec:
+  description: "This task lints the Python code using flake8 as per exercise instructions."
+  workspaces:
+    - name: source
+      description: The workspace containing the source code.
+  params:
+    - name: python-image
+      type: string
+      description: The Python image to use for linting.
+      default: python:3.9-slim # Alinhado com o Dockerfile e workflow
+  steps:
+    - name: lint
+      image: $(params.python-image)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env sh
+        echo "Installing dependencies (flake8)..."
+        pip install --upgrade pip
+        # requirements.txt should be installed by a prior step or if needed for linting context
+        # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install flake8
+        echo "Linting service directory with flake8..."
+        flake8 service --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 service --count --max-complexity=10 --max-line-length=127 --statistics
+        echo "Linting complete."
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: nose-tests # As per Task 5 requirement
+spec:
+  description: "This task runs Python unit tests using nosetests as per exercise instructions."
+  workspaces:
+    - name: source
+      description: The workspace containing the source code and tests.
+  params:
+    - name: python-image
+      type: string
+      description: The Python image to use for testing.
+      default: python:3.9-slim # Alinhado com o Dockerfile e workflow
+  steps:
+    - name: test
+      image: $(params.python-image)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env sh
+        echo "Installing dependencies (nose, coverage)..."
+        pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install nose coverage
+        echo "Running tests with nosetests on tests/ directory, covering service/ directory..."
+        nosetests -v --with-spec --spec-color --with-coverage --cover-package=service tests/
+        echo "Testing complete."
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-image
+spec:
+  description: "This task builds a container image from a Dockerfile using Kaniko."
+  workspaces:
+    - name: source
+      description: The workspace containing the source code and Dockerfile.
+  params:
+    - name: image-url
+      type: string
+      description: The target image URL (e.g., image-registry.openshift-image-registry.svc:5000/your-namespace/app-image).
+    - name: image-tag
+      type: string
+      description: The tag for the image.
+      default: "latest"
+    - name: dockerfile
+      type: string
+      description: Path to the Dockerfile.
+      default: "./Dockerfile" # Dockerfile do template IBM estará na raiz
+    - name: context
+      type: string
+      description: Path to the context directory for the build.
+      default: "." # Contexto é a raiz do repositório
+  steps:
+    - name: build-and-push
+      image: gcr.io/kaniko-project/executor:v1.9.1
+      args:
+        - "--dockerfile=$(params.dockerfile)"
+        - "--context=$(workspaces.source.path)/$(params.context)"
+        - "--destination=$(params.image-url):$(params.image-tag)"
+        - "--skip-tls-verify"
+      securityContext:
+        runAsUser: 0
+      workingDir: $(workspaces.source.path)
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-to-openshift
+spec:
+  description: "This task deploys the application to OpenShift using oc commands."
+  workspaces:
+    - name: source
+      description: The workspace, can be used for manifest files if any.
+      optional: true
+  params:
+    - name: image-url
+      type: string
+      description: "Fully qualified name of the image to deploy"
+    - name: app-name
+      type: string
+      description: "Name of the application to be deployed."
+      default: "cicd-final-app-ibm"
+    - name: openshift-cli-image
+      type: string
+      description: "Image containing OpenShift CLI (oc)."
+      default: "image-registry.openshift-image-registry.svc:5000/openshift/cli:latest"
+    - name: replicas
+      type: string
+      description: "Number of replicas for the deployment."
+      default: "1"
+    - name: port
+      type: string
+      description: "Port the application listens on inside the container."
+      default: "8000" # Alinhado com o Dockerfile do template IBM (ENV PORT 8000)
+
+  steps:
+    - name: deploy-app
+      image: $(params.openshift-cli-image)
+      script: |
+        #!/usr/bin/env sh
+        echo "Deploying application $(params.app-name) using image $(params.image-url) on port $(params.port)"
+
+        if oc get deployment $(params.app-name) > /dev/null 2>&1; then
+          echo "Deployment $(params.app-name) already exists. Patching image..."
+          oc patch deployment $(params.app-name) -p \'{"spec":{"template":{"spec":{"containers":[{"name":"$(params.app-name)","image":"$(params.image-url)"}]}}}}\'
+          oc rollout status deployment/$(params.app-name) || \
+            (echo "Rollout status failed for deployment, trying dc..." && oc rollout latest dc/$(params.app-name) && oc rollout status dc/$(params.app-name))
+        else 
+          echo "Deployment $(params.app-name) does not exist. Creating new deployment..."
+          oc new-app $(params.image-url) --name=$(params.app-name) -l app=$(params.app-name)
+          oc rollout status deployment/$(params.app-name) || \
+            (echo "Rollout status failed for deployment, trying dc..." && oc rollout latest dc/$(params.app-name) && oc rollout status dc/$(params.app-name))
+        fi
+
+        echo "Exposing service $(params.app-name) on port $(params.port)..."
+        oc delete service $(params.app-name) --ignore-not-found=true
+        oc expose deployment/$(params.app-name) --port=$(params.port) --target-port=$(params.port) 
+
+        echo "Creating/Updating route for $(params.app-name)..."
+        oc delete route $(params.app-name) --ignore-not-found=true
+        oc create route edge --service=$(params.app-name) --port=$(params.port) --insecure-policy=Allow
+
+        echo "Deployment attempt finished. Check OpenShift console for status."
+        oc get deployment $(params.app-name)
+        oc get service $(params.app-name)
+        oc get route $(params.app-name)
+

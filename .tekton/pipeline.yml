@@ -1,0 +1,113 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cicd-final-project-pipeline
+spec:
+  description: "CI/CD Pipeline for the Final Project (IBM Template). It lints, tests, builds, and deploys the application."
+  workspaces:
+    - name: shared-workspace
+      description: "This workspace will be shared by all tasks for source code, etc."
+
+  params:
+    - name: repo-url
+      type: string
+      description: The URL of the git repository to clone.
+      default: "https://github.com/galafis/cicd-final-project.git"
+    - name: repo-revision
+      type: string
+      description: The git revision (branch, tag, commit SHA) to checkout.
+      default: "main"
+    - name: image-name
+      type: string
+      description: Name of the image to be built.
+      default: "ibm-final-project-app" # Adjusted app name
+    - name: image-tag
+      type: string
+      description: Tag for the image to be built.
+      default: "latest"
+    - name: openshift-image-registry-url
+      type: string
+      description: "OpenShift internal image registry URL (e.g., image-registry.openshift-image-registry.svc:5000/your-project)"
+      default: "image-registry.openshift-image-registry.svc:5000/your-project-name" # Placeholder, user needs to change
+    - name: app-name
+      type: string
+      description: "Name of the application for deployment resources."
+      default: "ibm-final-project-app" # Adjusted app name
+
+  tasks:
+    - name: fetch-repository
+      taskRef:
+        name: git-clone
+        kind: ClusterTask
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.repo-revision)
+
+    - name: cleanup-workspace
+      taskRef:
+        name: cleanup
+      runAfter: [fetch-repository]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: lint-code
+      taskRef:
+        name: lint-code
+      runAfter: [fetch-repository] 
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: python-image
+          value: python:3.9-slim # Aligned with IBM template Dockerfile
+
+    - name: run-tests
+      taskRef:
+        name: nose-tests # Name kept for project requirement
+      runAfter: [lint-code]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: python-image
+          value: python:3.9-slim # Aligned with IBM template Dockerfile
+
+    - name: build-image
+      taskRef:
+        name: build-image
+      runAfter: [run-tests]
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: image-url
+          value: "$(params.openshift-image-registry-url)/$(params.image-name)"
+        - name: image-tag
+          value: "$(params.image-tag)"
+        - name: dockerfile
+          value: "./Dockerfile" # Dockerfile is at root of IBM template
+        - name: context
+          value: "."
+
+    - name: deploy-application
+      taskRef:
+        name: deploy-to-openshift
+      runAfter: [build-image]
+      workspaces:
+        - name: source 
+          workspace: shared-workspace
+          optional: true
+      params:
+        - name: image-url
+          value: "$(params.openshift-image-registry-url)/$(params.image-name):$(params.image-tag)"
+        - name: app-name
+          value: "$(params.app-name)"
+        - name: port
+          value: "8000" # Aligned with IBM template Dockerfile (ENV PORT 8000)
+

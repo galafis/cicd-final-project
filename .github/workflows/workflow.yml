@@ -1,0 +1,48 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9' # Alinhado com o Dockerfile do template IBM
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # Adicionar nose e coverage para a etapa de teste, e flake8 para lint
+        pip install flake8 pytest nose coverage
+
+    # Opcional: Executar script de setup se existir e for necessário para CI
+    # - name: Run setup script
+    #   if: hashFiles('bin/setup.sh') != ''
+    #   run: |
+    #     chmod +x bin/setup.sh
+    #     ./bin/setup.sh
+
+    - name: Lint with flake8
+      run: |
+        echo "Linting service directory..."
+        # Comandos de linting conforme especificado pelo usuário para o diretório service/
+        flake8 service --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 service --count --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run unit tests with nose
+      run: |
+        echo "Running tests with nose..."
+        # Comando de teste com nosetests conforme especificado pelo usuário
+        # Ajustado --cover-package para service, que é o diretório da aplicação no template IBM
+        nosetests -v --with-spec --spec-color --with-coverage --cover-package=service tests/
+

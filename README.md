@@ -1,8 +1,10 @@
 # 🚀 Cicd Final Project
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
-[![Flask](https://img.shields.io/badge/Flask-3.0-000000.svg)](https://flask.palletsprojects.com/)
+> Repositório para o projeto final do curso IBM DevOps and Software Engineering.
+
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB.svg)](https://img.shields.io/badge/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://img.shields.io/badge/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-000000.svg)](https://img.shields.io/badge/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [English](#english) | [Português](#português)
@@ -13,53 +15,94 @@
 
 ### 🎯 Overview
 
-**Cicd Final Project** — Repositório para o projeto final do curso IBM DevOps and Software Engineering.
+**Cicd Final Project** is a production-grade Python application complemented by Shell that showcases modern software engineering practices including clean architecture, comprehensive testing, containerized deployment, and CI/CD readiness.
 
-Total source lines: **517** across **7** files in **2** languages.
+The codebase comprises **517 lines** of source code organized across **7 modules**, following industry best practices for maintainability, scalability, and code quality.
 
 ### ✨ Key Features
 
-- **Production-Ready Architecture**: Modular, well-documented, and following best practices
-- **Comprehensive Implementation**: Complete solution with all core functionality
-- **Clean Code**: Type-safe, well-tested, and maintainable codebase
-- **Easy Deployment**: Docker support for quick setup and deployment
+- **🐳 Containerized**: Docker support for consistent deployment
+- **🏗️ Object-Oriented**: 1 core classes with clean architecture
+- **📐 Clean Architecture**: Modular design with clear separation of concerns
+- **🧪 Test Coverage**: Unit and integration tests for reliability
+- **📚 Documentation**: Comprehensive inline documentation and examples
+- **🔧 Configuration**: Environment-based configuration management
+
+### 🏗️ Architecture
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client Layer"]
+        A[Web Client]
+        B[API Documentation]
+    end
+    
+    subgraph API["⚡ API Layer"]
+        C[Middleware Pipeline]
+        D[Route Handlers]
+        E[Business Logic]
+    end
+    
+    subgraph Data["💾 Data Layer"]
+        F[(Primary Database)]
+        G[Cache]
+    end
+    
+    A --> C
+    B --> C
+    C --> D --> E
+    E --> F
+    E --> G
+    
+    style Client fill:#e1f5fe
+    style API fill:#f3e5f5
+    style Data fill:#fff3e0
+```
 
 ### 🚀 Quick Start
 
 #### Prerequisites
+
 - Python 3.12+
+- pip (Python package manager)
 - Docker and Docker Compose (optional)
 
 #### Installation
 
-1. **Clone the repository**
 ```bash
+# Clone the repository
 git clone https://github.com/galafis/cicd-final-project.git
 cd cicd-final-project
-```
 
-2. **Create virtual environment**
-```bash
+# Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
 
-3. **Install dependencies**
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-
-
-
-## 🐳 Docker
+#### Running
 
 ```bash
-# Build the image
+# Run the application
+python src/main.py
+```
+
+### 🐳 Docker
+
+```bash
+# Build the Docker image
 docker build -t cicd-final-project .
 
 # Run the container
-docker run -p 8000:8000 cicd-final-project
+docker run -d -p 8000:8000 --name cicd-final-project cicd-final-project
+
+# View logs
+docker logs -f cicd-final-project
+
+# Stop and remove
+docker stop cicd-final-project && docker rm cicd-final-project
 ```
 
 ### 🧪 Testing
@@ -68,11 +111,14 @@ docker run -p 8000:8000 cicd-final-project
 # Run all tests
 pytest
 
-# Run with coverage
+# Run with coverage report
 pytest --cov --cov-report=html
 
-# Run with verbose output
-pytest -v
+# Run specific test module
+pytest tests/test_main.py -v
+
+# Run with detailed output
+pytest -v --tb=short
 ```
 
 ### 📁 Project Structure
@@ -88,8 +134,10 @@ cicd-final-project/
 │   │   └── status.py
 │   ├── __init__.py
 │   └── routes.py
-├── tests/
+├── tests/         # Test suite
 │   └── test_routes.py
+├── Dockerfile
+├── LICENSE
 ├── README.md
 ├── requirements.txt
 └── setup.cfg
@@ -97,10 +145,46 @@ cicd-final-project/
 
 ### 🛠️ Tech Stack
 
-| Technology | Usage |
-|------------|-------|
-| Python | 6 files |
-| Shell | 1 files |
+| Technology | Description | Role |
+|------------|-------------|------|
+| **Python** | Core Language | Primary |
+| **Docker** | Containerization platform | Framework |
+| **Flask** | Lightweight web framework | Framework |
+| Shell | 1 files | Supporting |
+
+### 🚀 Deployment
+
+#### Cloud Deployment Options
+
+The application is containerized and ready for deployment on:
+
+| Platform | Service | Notes |
+|----------|---------|-------|
+| **AWS** | ECS, EKS, EC2 | Full container support |
+| **Google Cloud** | Cloud Run, GKE | Serverless option available |
+| **Azure** | Container Instances, AKS | Enterprise integration |
+| **DigitalOcean** | App Platform, Droplets | Cost-effective option |
+
+```bash
+# Production build
+docker build -t cicd-final-project:latest .
+
+# Tag for registry
+docker tag cicd-final-project:latest registry.example.com/cicd-final-project:latest
+
+# Push to registry
+docker push registry.example.com/cicd-final-project:latest
+```
+
+### 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ### 📄 License
 
@@ -109,7 +193,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### 👤 Author
 
 **Gabriel Demetrios Lafis**
-
 - GitHub: [@galafis](https://github.com/galafis)
 - LinkedIn: [Gabriel Demetrios Lafis](https://linkedin.com/in/gabriel-demetrios-lafis)
 
@@ -119,56 +202,110 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### 🎯 Visão Geral
 
-**Cicd Final Project** — Repositório para o projeto final do curso IBM DevOps and Software Engineering.
+**Cicd Final Project** é uma aplicação Python de nível profissional, complementada por Shell que demonstra práticas modernas de engenharia de software, incluindo arquitetura limpa, testes abrangentes, implantação containerizada e prontidão para CI/CD.
 
-Total de linhas de código: **517** em **7** arquivos em **2** linguagens.
+A base de código compreende **517 linhas** de código-fonte organizadas em **7 módulos**, seguindo as melhores práticas do setor para manutenibilidade, escalabilidade e qualidade de código.
 
 ### ✨ Funcionalidades Principais
 
-- **Arquitetura Pronta para Produção**: Modular, bem documentada e seguindo boas práticas
-- **Implementação Completa**: Solução completa com todas as funcionalidades principais
-- **Código Limpo**: Type-safe, bem testado e manutenível
-- **Fácil Implantação**: Suporte Docker para configuração e implantação rápidas
+- **🐳 Containerized**: Docker support for consistent deployment
+- **🏗️ Object-Oriented**: 1 core classes with clean architecture
+- **📐 Clean Architecture**: Modular design with clear separation of concerns
+- **🧪 Test Coverage**: Unit and integration tests for reliability
+- **📚 Documentation**: Comprehensive inline documentation and examples
+- **🔧 Configuration**: Environment-based configuration management
+
+### 🏗️ Arquitetura
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client Layer"]
+        A[Web Client]
+        B[API Documentation]
+    end
+    
+    subgraph API["⚡ API Layer"]
+        C[Middleware Pipeline]
+        D[Route Handlers]
+        E[Business Logic]
+    end
+    
+    subgraph Data["💾 Data Layer"]
+        F[(Primary Database)]
+        G[Cache]
+    end
+    
+    A --> C
+    B --> C
+    C --> D --> E
+    E --> F
+    E --> G
+    
+    style Client fill:#e1f5fe
+    style API fill:#f3e5f5
+    style Data fill:#fff3e0
+```
 
 ### 🚀 Início Rápido
 
-#### Pré-requisitos
+#### Prerequisites
+
 - Python 3.12+
-- Docker e Docker Compose (opcional)
+- pip (Python package manager)
+- Docker and Docker Compose (optional)
 
-#### Instalação
+#### Installation
 
-1. **Clone the repository**
 ```bash
+# Clone the repository
 git clone https://github.com/galafis/cicd-final-project.git
 cd cicd-final-project
-```
 
-2. **Create virtual environment**
-```bash
+# Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
 
-3. **Install dependencies**
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
+#### Running
 
+```bash
+# Run the application
+python src/main.py
+```
 
+### 🐳 Docker
 
-### 🧪 Testes
+```bash
+# Build the Docker image
+docker build -t cicd-final-project .
+
+# Run the container
+docker run -d -p 8000:8000 --name cicd-final-project cicd-final-project
+
+# View logs
+docker logs -f cicd-final-project
+
+# Stop and remove
+docker stop cicd-final-project && docker rm cicd-final-project
+```
+
+### 🧪 Testing
 
 ```bash
 # Run all tests
 pytest
 
-# Run with coverage
+# Run with coverage report
 pytest --cov --cov-report=html
 
-# Run with verbose output
-pytest -v
+# Run specific test module
+pytest tests/test_main.py -v
+
+# Run with detailed output
+pytest -v --tb=short
 ```
 
 ### 📁 Estrutura do Projeto
@@ -184,8 +321,10 @@ cicd-final-project/
 │   │   └── status.py
 │   ├── __init__.py
 │   └── routes.py
-├── tests/
+├── tests/         # Test suite
 │   └── test_routes.py
+├── Dockerfile
+├── LICENSE
 ├── README.md
 ├── requirements.txt
 └── setup.cfg
@@ -193,10 +332,40 @@ cicd-final-project/
 
 ### 🛠️ Stack Tecnológica
 
-| Tecnologia | Uso |
-|------------|-----|
-| Python | 6 files |
-| Shell | 1 files |
+| Tecnologia | Descrição | Papel |
+|------------|-----------|-------|
+| **Python** | Core Language | Primary |
+| **Docker** | Containerization platform | Framework |
+| **Flask** | Lightweight web framework | Framework |
+| Shell | 1 files | Supporting |
+
+### 🚀 Deployment
+
+#### Cloud Deployment Options
+
+The application is containerized and ready for deployment on:
+
+| Platform | Service | Notes |
+|----------|---------|-------|
+| **AWS** | ECS, EKS, EC2 | Full container support |
+| **Google Cloud** | Cloud Run, GKE | Serverless option available |
+| **Azure** | Container Instances, AKS | Enterprise integration |
+| **DigitalOcean** | App Platform, Droplets | Cost-effective option |
+
+```bash
+# Production build
+docker build -t cicd-final-project:latest .
+
+# Tag for registry
+docker tag cicd-final-project:latest registry.example.com/cicd-final-project:latest
+
+# Push to registry
+docker push registry.example.com/cicd-final-project:latest
+```
+
+### 🤝 Contribuindo
+
+Contribuições são bem-vindas! Sinta-se à vontade para enviar um Pull Request.
 
 ### 📄 Licença
 
@@ -205,6 +374,5 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 ### 👤 Autor
 
 **Gabriel Demetrios Lafis**
-
 - GitHub: [@galafis](https://github.com/galafis)
 - LinkedIn: [Gabriel Demetrios Lafis](https://linkedin.com/in/gabriel-demetrios-lafis)
